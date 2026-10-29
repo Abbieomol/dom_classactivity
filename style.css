@@ -255,13 +255,15 @@ td.actions {
   color: #4a5568;
 }
 
-.modal input {
+.modal input,
+.modal select {
   height: 40px;
   padding: 0 12px;
   border: 1px solid #c8d0dc;
   border-radius: 6px;
   background-color: #f8fafc;
   font-size: 14px;
+  color: #2b2f36;
 }
 
 .modal input:focus {
