@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InsightFlow | Employee Performance Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>InsightFlow</h1>
+    <p>Employee Performance Dashboard</p>
+  </header>
+
+  <main class="dashboard">
+ ## controls
+    <section class="controls">
+      <input type="search" id="search-input" placeholder="Search by name..." aria-label="Search employees by name">
+      <select id="role-filter" aria-label="Filter by role"></select>
+      <button id="add-btn" class="btn btn-primary" type="button">+ Add Employee</button>
+    </section>
+
+    <section id="table-container" class="table-container"></section>
+
+
+    <section id="summary" class="summary"></section>
+  </main>
+
+  <div id="modal-root"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
