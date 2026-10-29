@@ -5,12 +5,11 @@ const employees = [
   { id: 4, name: "David Mwangi", role: "QA Engineer", score: 64 },
 ];
 
-const roles = ["Developer", "Designer", "Project Manager", "QA Engineer"];
-
-let sortKey = null; 
-let sortDir = "asc"; 
-let searchTerm = ""; 
-let roleFilter = "all"; 
+let nextId = Math.max(...employees.map(function (e) { return e.id; })) + 1;
+let sortKey = null;
+let sortDir = "asc";
+let searchTerm = "";
+let roleFilter = "all";
 
 const columns = [
   { key: "name", label: "Name", sortable: true },
@@ -19,31 +18,52 @@ const columns = [
   { key: "actions", label: "Actions", sortable: false },
 ];
 
+function createEl(tag, className, text) {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (text !== undefined) el.textContent = text;
+  return el;
+}
+
+function clearEl(el) {
+  while (el.firstChild) el.removeChild(el.firstChild);
+}
+
+function getScoreClass(score) {
+  if (score >= 85) return "row-high";
+  if (score >= 70) return "row-mid";
+  return "row-low";
+}
+
+function getRoles() {
+  const unique = [];
+  employees.forEach(function (e) {
+    if (!unique.includes(e.role)) unique.push(e.role);
+  });
+  return unique.sort(function (a, b) { return a.localeCompare(b); });
+}
 
 function getVisibleEmployees() {
   const term = searchTerm.trim().toLowerCase();
 
-  const result = employees.filter(function (employee) {
-    const matchesName = employee.name.toLowerCase().includes(term);
-    const matchesRole = roleFilter === "all" || employee.role === roleFilter;
+  const result = employees.filter(function (e) {
+    const matchesName = e.name.toLowerCase().includes(term);
+    const matchesRole = roleFilter === "all" || e.role === roleFilter;
     return matchesName && matchesRole;
   });
 
   if (sortKey) {
     result.sort(function (a, b) {
-      let comparison;
-      if (sortKey === "score") {
-        comparison = a.score - b.score; 
-      } else {
-        comparison = a[sortKey].localeCompare(b[sortKey]); 
-      }
+      const comparison =
+        sortKey === "score"
+          ? a.score - b.score
+          : a[sortKey].localeCompare(b[sortKey]);
       return sortDir === "asc" ? comparison : -comparison;
     });
   }
 
   return result;
 }
-
 
 function setSort(key) {
   if (sortKey === key) {
@@ -57,28 +77,21 @@ function setSort(key) {
 
 function renderTable() {
   const container = document.getElementById("table-container");
-  container.innerHTML = "";
+  clearEl(container);
 
-  const table = document.createElement("table");
+  const table = createEl("table");
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");
 
   columns.forEach(function (col) {
-    const th = document.createElement("th");
-    th.textContent = col.label;
+    const th = createEl("th", "", col.label);
 
     if (col.sortable) {
       th.classList.add("sortable");
-
-     
       if (sortKey === col.key) {
         th.classList.add("sorted");
-        const arrow = document.createElement("span");
-        arrow.className = "sort-arrow";
-        arrow.textContent = sortDir === "asc" ? " ▲" : " ▼";
-        th.appendChild(arrow);
+        th.appendChild(createEl("span", "sort-arrow", sortDir === "asc" ? " ▲" : " ▼"));
       }
-
       th.addEventListener("click", function () {
         setSort(col.key);
       });
@@ -91,49 +104,40 @@ function renderTable() {
   table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
-  const visibleEmployees = getVisibleEmployees();
+  const visible = getVisibleEmployees();
 
-  
-  if (visibleEmployees.length === 0) {
+  if (visible.length === 0) {
     const emptyRow = document.createElement("tr");
-    const emptyCell = document.createElement("td");
+    const emptyCell = createEl("td", "empty-state", "No employees match your search or filter.");
     emptyCell.colSpan = columns.length;
-    emptyCell.className = "empty-state";
-    emptyCell.textContent = "No employees match your search or filter.";
     emptyRow.appendChild(emptyCell);
     tbody.appendChild(emptyRow);
   }
 
-  visibleEmployees.forEach(function (employee) {
-    const row = document.createElement("tr");
+  visible.forEach(function (employee) {
+    const row = createEl("tr");
+    row.classList.add(getScoreClass(employee.score));
 
-    const nameCell = document.createElement("td");
-    nameCell.textContent = employee.name;
+    row.appendChild(createEl("td", "", employee.name));
+    row.appendChild(createEl("td", "", employee.role));
+    row.appendChild(createEl("td", "", String(employee.score)));
 
-    const roleCell = document.createElement("td");
-    roleCell.textContent = employee.role;
+    const actionsCell = createEl("td", "actions");
 
-    const scoreCell = document.createElement("td");
-    scoreCell.textContent = employee.score;
-
-    const actionsCell = document.createElement("td");
-
-    const editBtn = document.createElement("button");
+    const editBtn = createEl("button", "btn btn-edit", "Edit");
     editBtn.type = "button";
-    editBtn.className = "btn";
-    editBtn.textContent = "Edit";
+    editBtn.addEventListener("click", function () {
+      openEditModal(employee.id);
+    });
 
-    const deleteBtn = document.createElement("button");
+    const deleteBtn = createEl("button", "btn btn-delete", "Delete");
     deleteBtn.type = "button";
-    deleteBtn.className = "btn";
-    deleteBtn.textContent = "Delete";
+    deleteBtn.addEventListener("click", function () {
+      deleteEmployee(employee.id);
+    });
 
     actionsCell.appendChild(editBtn);
     actionsCell.appendChild(deleteBtn);
-
-    row.appendChild(nameCell);
-    row.appendChild(roleCell);
-    row.appendChild(scoreCell);
     row.appendChild(actionsCell);
     tbody.appendChild(row);
   });
@@ -142,40 +146,265 @@ function renderTable() {
   container.appendChild(table);
 }
 
-
 function renderRoleFilter() {
   const select = document.getElementById("role-filter");
-  select.innerHTML = "";
+  const available = getRoles();
 
-  const allOption = document.createElement("option");
+  if (roleFilter !== "all" && !available.includes(roleFilter)) {
+    roleFilter = "all";
+  }
+
+  clearEl(select);
+
+  const allOption = createEl("option", "", "All roles");
   allOption.value = "all";
-  allOption.textContent = "All roles";
   select.appendChild(allOption);
 
-  roles.forEach(function (role) {
-    const option = document.createElement("option");
+  available.forEach(function (role) {
+    const option = createEl("option", "", role);
     option.value = role;
-    option.textContent = role;
     select.appendChild(option);
+  });
+
+  select.value = roleFilter;
+}
+
+function updateSummary() {
+  const summary = document.getElementById("summary");
+  clearEl(summary);
+
+  const total = employees.length;
+  let average = "—";
+  let top = "—";
+
+  if (total > 0) {
+    const sum = employees.reduce(function (acc, e) { return acc + e.score; }, 0);
+    average = (sum / total).toFixed(1);
+    top = employees.reduce(function (best, e) {
+      return e.score > best.score ? e : best;
+    }).name;
+  }
+
+  const stats = [
+    { label: "Total Employees", value: String(total) },
+    { label: "Average Score", value: average },
+    { label: "Top Performer", value: top },
+  ];
+
+  stats.forEach(function (stat) {
+    const card = createEl("div", "stat-card");
+    card.appendChild(createEl("div", "stat-label", stat.label));
+    card.appendChild(createEl("div", "stat-value", stat.value));
+    summary.appendChild(card);
   });
 }
 
+function refresh() {
+  renderRoleFilter();
+  renderTable();
+  updateSummary();
+}
 
-function setupFilters() {
-  const searchInput = document.getElementById("search-input");
-  const roleSelect = document.getElementById("role-filter");
+function validateEmployee(values, requireName) {
+  const errors = {};
 
-  searchInput.addEventListener("input", function (event) {
+  if (requireName && values.name.trim() === "") {
+    errors.name = "Name is required.";
+  }
+
+  if (values.role.trim() === "") {
+    errors.role = "Role is required.";
+  }
+
+  const rawScore = values.score.trim();
+  const score = Number(rawScore);
+  if (rawScore === "" || Number.isNaN(score)) {
+    errors.score = "Score must be a number.";
+  } else if (score < 0 || score > 100) {
+    errors.score = "Score must be between 0 and 100.";
+  }
+
+  return errors;
+}
+
+function closeModal() {
+  clearEl(document.getElementById("modal-root"));
+}
+
+function openModal(config) {
+  closeModal();
+
+  const overlay = createEl("div", "modal-overlay");
+  overlay.addEventListener("mousedown", function (event) {
+    if (event.target === overlay) closeModal();
+  });
+
+  const modal = createEl("div", "modal");
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-modal", "true");
+  modal.appendChild(createEl("h2", "", config.title));
+
+  const form = document.createElement("form");
+  form.noValidate = true;
+
+  const inputs = {};
+  const errorEls = {};
+
+  config.fields.forEach(function (field) {
+    const wrapper = createEl("div", "field");
+
+    const label = createEl("label", "", field.label);
+    label.htmlFor = "field-" + field.key;
+
+    const input = document.createElement("input");
+    input.id = "field-" + field.key;
+    input.type = field.type;
+    input.value = config.values && config.values[field.key] !== undefined ? config.values[field.key] : "";
+
+    if (field.type === "number") {
+      input.min = "0";
+      input.max = "100";
+      input.step = "any";
+    }
+
+    if (field.key === "role") {
+      input.setAttribute("list", "role-options");
+    }
+
+    const error = createEl("div", "error");
+
+    inputs[field.key] = input;
+    errorEls[field.key] = error;
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(input);
+    wrapper.appendChild(error);
+    form.appendChild(wrapper);
+  });
+
+  const datalist = document.createElement("datalist");
+  datalist.id = "role-options";
+  getRoles().forEach(function (role) {
+    const option = document.createElement("option");
+    option.value = role;
+    datalist.appendChild(option);
+  });
+  form.appendChild(datalist);
+
+  const actions = createEl("div", "modal-actions");
+
+  const cancelBtn = createEl("button", "btn btn-secondary", "Cancel");
+  cancelBtn.type = "button";
+  cancelBtn.addEventListener("click", closeModal);
+
+  const saveBtn = createEl("button", "btn btn-primary", config.submitLabel);
+  saveBtn.type = "submit";
+
+  actions.appendChild(cancelBtn);
+  actions.appendChild(saveBtn);
+  form.appendChild(actions);
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+
+    const submitted = {};
+    config.fields.forEach(function (field) {
+      submitted[field.key] = inputs[field.key].value;
+    });
+
+    const errors = config.validate(submitted);
+
+    config.fields.forEach(function (field) {
+      const message = errors[field.key] || "";
+      errorEls[field.key].textContent = message;
+      inputs[field.key].classList.toggle("invalid", message !== "");
+    });
+
+    if (Object.keys(errors).length > 0) return;
+
+    config.onSubmit(submitted);
+    closeModal();
+  });
+
+  modal.appendChild(form);
+  overlay.appendChild(modal);
+  document.getElementById("modal-root").appendChild(overlay);
+
+  inputs[config.fields[0].key].focus();
+}
+
+function openEditModal(id) {
+  const employee = employees.find(function (e) { return e.id === id; });
+  if (!employee) return;
+
+  openModal({
+    title: "Edit " + employee.name,
+    fields: [
+      { key: "role", label: "Role", type: "text" },
+      { key: "score", label: "Score (0-100)", type: "number" },
+    ],
+    values: { role: employee.role, score: String(employee.score) },
+    submitLabel: "Save Changes",
+    validate: function (values) {
+      return validateEmployee(values, false);
+    },
+    onSubmit: function (values) {
+      employee.role = values.role.trim();
+      employee.score = Number(values.score);
+      refresh();
+    },
+  });
+}
+
+function openAddModal() {
+  openModal({
+    title: "Add Employee",
+    fields: [
+      { key: "name", label: "Name", type: "text" },
+      { key: "role", label: "Role", type: "text" },
+      { key: "score", label: "Score (0-100)", type: "number" },
+    ],
+    submitLabel: "Add Employee",
+    validate: function (values) {
+      return validateEmployee(values, true);
+    },
+    onSubmit: function (values) {
+      employees.push({
+        id: nextId++,
+        name: values.name.trim(),
+        role: values.role.trim(),
+        score: Number(values.score),
+      });
+      refresh();
+    },
+  });
+}
+
+function deleteEmployee(id) {
+  const index = employees.findIndex(function (e) { return e.id === id; });
+  if (index === -1) return;
+  employees.splice(index, 1);
+  refresh();
+}
+
+function init() {
+  document.getElementById("search-input").addEventListener("input", function (event) {
     searchTerm = event.target.value;
     renderTable();
   });
 
-  roleSelect.addEventListener("change", function (event) {
+  document.getElementById("role-filter").addEventListener("change", function (event) {
     roleFilter = event.target.value;
     renderTable();
   });
+
+  document.getElementById("add-btn").addEventListener("click", openAddModal);
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeModal();
+  });
+
+  refresh();
 }
 
-renderRoleFilter();
-setupFilters();
-renderTable();
+document.addEventListener("DOMContentLoaded", init);
