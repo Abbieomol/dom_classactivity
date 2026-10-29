@@ -3,22 +3,21 @@ const employees = [
   { id: 1, name: "Alice Johnson", role: "Developer", score: 88 },
   { id: 2, name: "James Smith", role: "Designer", score: 73 },
   { id: 3, name: "Fatou Kamara", role: "Project Manager", score: 91 },
-  { id: 4, name: "David Mwangi", role: "QA Engineer", score: 64 }
+  { id: 4, name: "David Mwangi", role: "QA Engineer", score: 64 },
 ];
 
-let nextId = Math.max(...employees.map(e => e.id)) + 1;
-let sortKey = null;        
-let sortDir = "asc";       
+let nextId = Math.max(...employees.map((e) => e.id)) + 1;
+let sortKey = null;
+let sortDir = "asc";
 let searchTerm = "";
 let roleFilter = "all";
 
 const COLUMNS = [
-  { key: "name",    label: "Name",    sortable: true },
-  { key: "role",    label: "Role",    sortable: true },
-  { key: "score",   label: "Score",   sortable: true },
-  { key: "actions", label: "Actions", sortable: false }
+  { key: "name", label: "Name", sortable: true },
+  { key: "role", label: "Role", sortable: true },
+  { key: "score", label: "Score", sortable: true },
+  { key: "actions", label: "Actions", sortable: false },
 ];
-
 
 function clearElement(node) {
   while (node.firstChild) node.removeChild(node.firstChild);
@@ -38,14 +37,16 @@ function getScoreClass(score) {
 }
 
 function getUniqueRoles() {
-  return [...new Set(employees.map(e => e.role))].sort((a, b) => a.localeCompare(b));
+  return [...new Set(employees.map((e) => e.role))].sort((a, b) =>
+    a.localeCompare(b),
+  );
 }
 
 // available data filtering
 function getVisibleEmployees() {
   const term = searchTerm.trim().toLowerCase();
 
-  let result = employees.filter(emp => {
+  let result = employees.filter((emp) => {
     const matchesName = emp.name.toLowerCase().includes(term);
     const matchesRole = roleFilter === "all" || emp.role === roleFilter;
     return matchesName && matchesRole;
@@ -84,18 +85,23 @@ function renderTable() {
   // Header
   const thead = document.createElement("thead");
   const headRow = document.createElement("tr");
-  COLUMNS.forEach(col => {
+  COLUMNS.forEach((col) => {
     const th = createEl("th", "", col.label);
     if (col.sortable) {
       th.classList.add("sortable");
       th.tabIndex = 0;
       if (sortKey === col.key) {
         th.classList.add("sorted");
-        th.setAttribute("aria-sort", sortDir === "asc" ? "ascending" : "descending");
-        th.appendChild(createEl("span", "sort-arrow", sortDir === "asc" ? "▲" : "▼"));
+        th.setAttribute(
+          "aria-sort",
+          sortDir === "asc" ? "ascending" : "descending",
+        );
+        th.appendChild(
+          createEl("span", "sort-arrow", sortDir === "asc" ? "▲" : "▼"),
+        );
       }
       th.addEventListener("click", () => setSort(col.key));
-      th.addEventListener("keydown", e => {
+      th.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
           setSort(col.key);
@@ -113,15 +119,19 @@ function renderTable() {
 
   if (rows.length === 0) {
     const tr = document.createElement("tr");
-    const td = createEl("td", "empty-state", "No employees match your search or filter.");
+    const td = createEl(
+      "td",
+      "empty-state",
+      "No employees match your search or filter.",
+    );
     td.colSpan = COLUMNS.length;
     tr.appendChild(td);
     tbody.appendChild(tr);
   }
 
-  rows.forEach(emp => {
+  rows.forEach((emp) => {
     const tr = document.createElement("tr");
-    tr.classList.add(getScoreClass(emp.score));   
+    tr.classList.add(getScoreClass(emp.score));
 
     tr.appendChild(createEl("td", "", emp.name));
     tr.appendChild(createEl("td", "", emp.role));
@@ -148,11 +158,10 @@ function renderTable() {
   container.appendChild(table);
 }
 
-// filter 
+// filter
 function renderRoleFilter() {
   const select = document.getElementById("role-filter");
   const roles = getUniqueRoles();
-
 
   if (roleFilter !== "all" && !roles.includes(roleFilter)) roleFilter = "all";
 
@@ -162,7 +171,7 @@ function renderRoleFilter() {
   allOpt.value = "all";
   select.appendChild(allOpt);
 
-  roles.forEach(role => {
+  roles.forEach((role) => {
     const opt = createEl("option", "", role);
     opt.value = role;
     select.appendChild(opt);
@@ -190,10 +199,10 @@ function updateSummary() {
   const stats = [
     { label: "Total Employees", value: String(total) },
     { label: "Average Score", value: average },
-    { label: "Top Performer", value: top }
+    { label: "Top Performer", value: top },
   ];
 
-  stats.forEach(stat => {
+  stats.forEach((stat) => {
     const card = createEl("div", "stat-card");
     card.appendChild(createEl("div", "label", stat.label));
     card.appendChild(createEl("div", "value", stat.value));
@@ -236,13 +245,20 @@ function closeModal() {
   clearElement(root);
 }
 
-function openModal({ title, fields, values = {}, submitLabel, validate, onSubmit }) {
+function openModal({
+  title,
+  fields,
+  values = {},
+  submitLabel,
+  validate,
+  onSubmit,
+}) {
   closeModal();
   const root = document.getElementById("modal-root");
 
   const overlay = createEl("div", "modal-overlay");
   // Clicking the overlayncloses it
-  overlay.addEventListener("mousedown", e => {
+  overlay.addEventListener("mousedown", (e) => {
     if (e.target === overlay) closeModal();
   });
 
@@ -257,7 +273,7 @@ function openModal({ title, fields, values = {}, submitLabel, validate, onSubmit
   const inputs = {};
   const errorEls = {};
 
-  fields.forEach(f => {
+  fields.forEach((f) => {
     const wrap = createEl("div", "field");
     const label = createEl("label", "", f.label);
     const inputId = `field-${f.key}`;
@@ -287,7 +303,7 @@ function openModal({ title, fields, values = {}, submitLabel, validate, onSubmit
 
   const datalist = document.createElement("datalist");
   datalist.id = "role-options";
-  getUniqueRoles().forEach(role => {
+  getUniqueRoles().forEach((role) => {
     const opt = document.createElement("option");
     opt.value = role;
     datalist.appendChild(opt);
@@ -304,16 +320,17 @@ function openModal({ title, fields, values = {}, submitLabel, validate, onSubmit
   actions.appendChild(saveBtn);
   form.appendChild(actions);
 
-  form.addEventListener("submit", e => {
+  form.addEventListener("submit", (e) => {
     e.preventDefault();
 
     const submitted = {};
-    fields.forEach(f => { submitted[f.key] = inputs[f.key].value; });
+    fields.forEach((f) => {
+      submitted[f.key] = inputs[f.key].value;
+    });
 
     const errors = validate(submitted);
 
-
-    fields.forEach(f => {
+    fields.forEach((f) => {
       const msg = errors[f.key] || "";
       errorEls[f.key].textContent = msg;
       inputs[f.key].classList.toggle("invalid", Boolean(msg));
@@ -329,30 +346,29 @@ function openModal({ title, fields, values = {}, submitLabel, validate, onSubmit
   overlay.appendChild(modal);
   root.appendChild(overlay);
 
-
   const firstKey = fields[0].key;
   inputs[firstKey].focus();
 }
 
 // ---------- Actions: edit / add / delete ----------
 function openEditModal(id) {
-  const emp = employees.find(e => e.id === id);
+  const emp = employees.find((e) => e.id === id);
   if (!emp) return;
 
   openModal({
     title: `Edit ${emp.name}`,
     fields: [
-      { key: "role",  label: "Role",  type: "text", listId: "role-options" },
-      { key: "score", label: "Score (0-100)", type: "number" }
+      { key: "role", label: "Role", type: "text", listId: "role-options" },
+      { key: "score", label: "Score (0-100)", type: "number" },
     ],
     values: { role: emp.role, score: String(emp.score) },
     submitLabel: "Save Changes",
-    validate: values => validateEmployee(values, { requireName: false }),
-    onSubmit: values => {
-      emp.role = values.role.trim();      // modifies the underlying array
+    validate: (values) => validateEmployee(values, { requireName: false }),
+    onSubmit: (values) => {
+      emp.role = values.role.trim(); // modifies the underlying array
       emp.score = Number(values.score);
       refresh();
-    }
+    },
   });
 }
 
@@ -360,45 +376,45 @@ function openAddModal() {
   openModal({
     title: "Add Employee",
     fields: [
-      { key: "name",  label: "Name",  type: "text" },
-      { key: "role",  label: "Role",  type: "text", listId: "role-options" },
-      { key: "score", label: "Score (0-100)", type: "number" }
+      { key: "name", label: "Name", type: "text" },
+      { key: "role", label: "Role", type: "text", listId: "role-options" },
+      { key: "score", label: "Score (0-100)", type: "number" },
     ],
     submitLabel: "Add Employee",
-    validate: values => validateEmployee(values, { requireName: true }),
-    onSubmit: values => {
+    validate: (values) => validateEmployee(values, { requireName: true }),
+    onSubmit: (values) => {
       employees.push({
         id: nextId++,
         name: values.name.trim(),
         role: values.role.trim(),
-        score: Number(values.score)
+        score: Number(values.score),
       });
       refresh();
-    }
+    },
   });
 }
 
 function deleteEmployee(id) {
-  const index = employees.findIndex(e => e.id === id);
+  const index = employees.findIndex((e) => e.id === id);
   if (index === -1) return;
-  employees.splice(index, 1);   
-  refresh();                    
+  employees.splice(index, 1);
+  refresh();
 }
 
 function init() {
-  document.getElementById("search-input").addEventListener("input", e => {
+  document.getElementById("search-input").addEventListener("input", (e) => {
     searchTerm = e.target.value;
     renderTable();
   });
 
-  document.getElementById("role-filter").addEventListener("change", e => {
+  document.getElementById("role-filter").addEventListener("change", (e) => {
     roleFilter = e.target.value;
     renderTable();
   });
 
   document.getElementById("add-btn").addEventListener("click", openAddModal);
 
-  document.addEventListener("keydown", e => {
+  document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeModal();
   });
 
